@@ -4,6 +4,17 @@ version: 2.1
 orbs:
   aws-ecr: circleci/aws-ecr@9.5.4  #This line adds the ECR orb. Check CircleCI Orb Registry for latest version if needed.
 
+
+
+# Define reusable executors (environments)
+#executors:
+#  docker-build-executor:
+#    docker:
+#      - image: cimg/base:2024.06
+#    resource_class: large
+#    environment:
+#      DOCKER_BUILDKIT: 1
+
 # Define jobs
 jobs:
   build_and_push_image:
@@ -25,20 +36,14 @@ jobs:
             echo "export SHORT_HASH=$SHORT_HASH" >> "$BASH_ENV"
             echo "Full git hash: $(git rev-parse HEAD)"
             echo "Short git hash: $SHORT_HASH"
-      - aws-ecr/ecr-login:
-          region: << parameters.aws_region >>
-      - aws-ecr/build-image:
+      - aws-ecr/build-and-push-image:
           context: aws-creds
           repo: isa/<< parameters.app_name >>
           tag: main-$SHORT_HASH
           dockerfile: Dockerfile
           path: .
           region: << parameters.aws_region >>
-      - aws-ecr/push-image:
-          context: aws-creds
-          repo: isa/<< parameters.app_name >>
-          tag: main-$SHORT_HASH
-          region: << parameters.aws_region >>
+
 
 # Define workflows
 workflows:
