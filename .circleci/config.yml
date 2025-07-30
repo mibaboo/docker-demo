@@ -15,5 +15,5 @@ workflows:
           push_image: true
           region: eu-west-1 
           repo: isa/python-demo 
-          tag: $CIRCLE_SHA1_SHORT
+          tag: isa 
 
