@@ -1,10 +1,17 @@
-version: 2.1
+version: '2.1'
 orbs:
-  aws-ecr: circleci/aws-ecr@9.5.4
-
+  aws-cli: circleci/aws-cli@5.1
+  aws-ecr: circleci/aws-ecr@9.0
 workflows:
-  build-and-deploy:
+  build_and_push_image:
     jobs:
-      - aws-ecr/build-and-push-image:
-          repo: "isa/python-demo"
-          tag: "${CIRCLE_SHA1}"
+      - aws-ecr/build_and_push_image:
+          account_id: ${AWS_ACCOUNT_ID}
+          context: aws-creds 
+          dockerfile: Dockerfile
+          executors: base
+          push_image: true
+          region: ${AWS_DEFAULT_REGION}
+          repo: isa/python-demo 
+          tag: myECRRepoTag
+
