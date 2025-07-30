@@ -15,5 +15,5 @@ workflows:
           push_image: true
           region: ${AWS_DEFAULT_REGION}
           repo: isa/python-demo 
-          tag: myECRRepoTag
+          tag: isa
 
