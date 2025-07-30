@@ -1,54 +1,25 @@
-# .circleci/config.yml
 version: 2.1
-
-# Declare the Orbs you want to use
-# Ensure this is at the top-level, after 'version'.
 orbs:
-  aws-ecr: circleci/aws-ecr@9.5.4 # Using the version you specified.
+  aws-ecr: circleci/aws-ecr@9.5.4
+  aws-cli: circleci/aws-cli@5.1
 
-# Define reusable pipeline parameters
-parameters:
-  app_name:
-    type: string
-    default: "python-demo"
-  aws_region:
-    type: string
-    default: "eu-west-1"
 
 # Define your jobs
 jobs:
   build_and_push_image:
-    # Use the default executor provided by the aws-ecr orb.
-    # This comes with Docker and AWS CLI.
     executor: aws-ecr/default
     working_directory: ~/project
-
     steps:
       - checkout
-
-      - run:
-          name: Get short Git hash
-          command: |
-            SHORT_HASH=$(git rev-parse --short=7 HEAD)
-            echo "export SHORT_HASH=$SHORT_HASH" >> "$BASH_ENV"
-            echo "Full git hash: $(git rev-parse HEAD)"
-            echo "Short git hash: $SHORT_HASH"
-
-      # This is the line that's causing the error. Let's make sure its indentation is perfect.
       - aws-ecr/build-and-push-image:
-          repo: isa/<< pipeline.parameters.app_name >>
-          tag: main-$SHORT_HASH
+          repo: isa/python-demo
+          tag: isa-test
           dockerfile: Dockerfile
           path: .
-          region: << pipeline.parameters.aws_region >>
+          region: eu-west-1 
 
-# Define your workflows
 workflows:
   build_and_push_image_workflow:
     jobs:
       - build_and_push_image:
           context: aws-creds
-          # If you want to put filters back for a specific branch (e.g., 'main'):
-          # filters:
-          #   branches:
-          #     only: main
