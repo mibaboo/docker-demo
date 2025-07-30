@@ -6,15 +6,6 @@ orbs:
 
 
 
-# Define reusable executors (environments)
-#executors:
-#  docker-build-executor:
-#    docker:
-#      - image: cimg/base:2024.06
-#    resource_class: large
-#    environment:
-#      DOCKER_BUILDKIT: 1
-
 # Define jobs
 jobs:
   build_and_push_image:
