@@ -5,43 +5,37 @@ version: 2.1
 executors:
   docker-build-executor:
     docker:
-      # Using a cimg/base image and installing aws-cli on it
-      # For a more robust solution without orbs, you might build your own Docker image
-      # that has aws-cli and Docker pre-installed, and use that as your executor.
-      # For now, we'll install AWS CLI within the job steps.
       - image: cimg/base:2024.06
     resource_class: large
     environment:
-      DOCKER_BUILDKIT: 1 # Enable BuildKit for faster Docker builds
+      DOCKER_BUILDKIT: 1
 
 # Define common parameters for jobs
 parameters:
   app_name:
     type: string
-    default: "python-demo" # Your application name from Azure DevOps
+    default: "python-demo"
   aws_region:
     type: string
-    default: "eu-west-1" # Your AWS region
+    default: "eu-west-1"
 
-jobs:
+jobs: # <--- 'jobs' is at the top level
   build_and_push_image:
     executor: docker-build-executor
     working_directory: ~/project
     steps:
-      - checkout # Checkout your code
+      - checkout
       - run:
           name: Get short Git hash
           command: |
             SHORT_HASH=$(git rev-parse --short=7 HEAD)
-            echo "export SHORT_HASH=$SHORT_HASH" >> "$BASH_ENV" # Make the variable available to subsequent steps
+            echo "export SHORT_HASH=$SHORT_HASH" >> "$BASH_ENV"
             echo "Full git hash: $(git rev-parse HEAD)"
             echo "Short git hash: $SHORT_HASH"
-      - setup_remote_docker: # This step sets up a Docker daemon for building images
+      - setup_remote_docker:
           docker_layer_caching: true
       - run:
           name: Install AWS CLI
-          # Installing aws-cli v2. This is a common way to do it on Ubuntu-based images.
-          # You might need to adjust based on your chosen executor image.
           command: |
             sudo apt-get update && sudo apt-get install -y curl unzip
             curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
@@ -54,9 +48,6 @@ jobs:
             docker build -t isa/<< pipeline.parameters.app_name >>:main-$SHORT_HASH .
       - run:
           name: Authenticate with ECR and Push Docker image
-          # This command assumes AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are available via the 'aws-creds' context.
-          # The AWS CLI automatically picks up these environment variables.
-          # Replace '294185804746' with your actual AWS Account ID.
           command: |
             ECR_REGISTRY_ID="294185804746" # YOUR AWS ACCOUNT ID HERE
             ECR_REPOSITORY="isa/<< pipeline.parameters.app_name >>"
@@ -71,11 +62,11 @@ jobs:
             echo "Pushing Docker image to ECR..."
             docker push $ECR_REGISTRY_ID.dkr.ecr.<< pipeline.parameters.aws_region >>.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
 
-workflows:
-  build_and_push_image_workflow: # Renamed for clarity, focusing on just the build/push for now
-    jobs:
-      - build_and_push_image:
-          context: aws-creds # Link to your AWS credentials context
+workflows: # <--- THIS MUST BE AT THE SAME INDENTATION LEVEL AS 'version', 'executors', 'parameters', and 'jobs'
+  build_and_push_image_workflow: # This is the name of your workflow
+    jobs: # <--- This defines the jobs within this workflow
+      - build_and_push_image: # This references the job defined above
+          context: aws-creds
           filters:
             branches:
               only: main
