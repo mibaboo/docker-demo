@@ -10,21 +10,21 @@ executors:
     environment:
       DOCKER_BUILDKIT: 1
 
-# Define common parameters for jobs
-parameters:
-  app_name:
-    type: string
-    default: "python-demo"
-  aws_region:
-    type: string
-    default: "eu-west-1"
-
-jobs: # <--- 'jobs' is at the top level
+# Define jobs
+jobs:
   build_and_push_image:
+    parameters:
+      app_name:
+        type: string
+        default: "python-demo"
+      aws_region:
+        type: string
+        default: "eu-west-1"
     executor: docker-build-executor
     working_directory: ~/project
     steps:
       - checkout
+
       - run:
           name: Get short Git hash
           command: |
@@ -32,8 +32,10 @@ jobs: # <--- 'jobs' is at the top level
             echo "export SHORT_HASH=$SHORT_HASH" >> "$BASH_ENV"
             echo "Full git hash: $(git rev-parse HEAD)"
             echo "Short git hash: $SHORT_HASH"
+
       - setup_remote_docker:
           docker_layer_caching: true
+
       - run:
           name: Install AWS CLI
           command: |
@@ -42,31 +44,36 @@ jobs: # <--- 'jobs' is at the top level
             unzip awscliv2.zip
             sudo ./aws/install
             aws --version
+
       - run:
           name: Build Docker image
           command: |
-            docker build -t isa/<< pipeline.parameters.app_name >>:main-$SHORT_HASH .
+            docker build -t isa/<< parameters.app_name >>:main-$SHORT_HASH .
+
       - run:
           name: Authenticate with ECR and Push Docker image
           command: |
-            ECR_REGISTRY_ID="294185804746" # YOUR AWS ACCOUNT ID HERE
-            ECR_REPOSITORY="isa/<< pipeline.parameters.app_name >>"
+            ECR_REGISTRY_ID="294185804746"
+            ECR_REPOSITORY="isa/<< parameters.app_name >>"
             IMAGE_TAG="main-$SHORT_HASH"
 
             echo "Authenticating to ECR..."
-            aws ecr get-login-password --region << pipeline.parameters.aws_region >> \
+            aws ecr get-login-password --region << parameters.aws_region >> \
             | docker login \
               --username AWS \
-              --password-stdin $ECR_REGISTRY_ID.dkr.ecr.<< pipeline.parameters.aws_region >>.amazonaws.com
+              --password-stdin $ECR_REGISTRY_ID.dkr.ecr.<< parameters.aws_region >>.amazonaws.com
 
             echo "Pushing Docker image to ECR..."
-            docker push $ECR_REGISTRY_ID.dkr.ecr.<< pipeline.parameters.aws_region >>.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
+            docker tag isa/<< parameters.app_name >>:$IMAGE_TAG $ECR_REGISTRY_ID.dkr.ecr.<< parameters.aws_region >>.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
+            docker push $ECR_REGISTRY_ID.dkr.ecr.<< parameters.aws_region >>.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
 
-workflows: # <--- THIS MUST BE AT THE SAME INDENTATION LEVEL AS 'version', 'executors', 'parameters', and 'jobs'
-  build_and_push_image_workflow: # This is the name of your workflow
-    jobs: # <--- This defines the jobs within this workflow
-      - build_and_push_image: # This references the job defined above
+# Define workflows
+workflows:
+  build_and_push_image_workflow:
+    jobs:
+      - build_and_push_image:
           context: aws-creds
           filters:
             branches:
               only: main
+
