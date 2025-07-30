@@ -1,0 +1,31 @@
+namespace: tfglabs
+
+replicaCount: 1
+
+image:
+  repository: $REGISTRY/$TEAM/$IMAGE
+  pullPolicy: IfNotPresent
+  # The tag is overwitten by the pipeline
+  tag: latest 
+
+containerPort: 80
+livenessProbe:
+  enabled: true
+  path: /
+readinessProbe:
+  enabled: true
+  path: /
+
+resources: 
+  limits:
+    memory: 128Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+
+# Set to true if the app needs to lookup secrets in secret manager
+asm: false
+serviceAccount: tfglabs-sa
+metrics: false
+team: team-sre 
