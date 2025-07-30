@@ -1,49 +1,19 @@
-# .circleci/config.yml
-version: 2.1
-
+version: '2.1'
 orbs:
-  aws-ecr: circleci/aws-ecr@9.5.4  #This line adds the ECR orb. Check CircleCI Orb Registry for latest version if needed.
-
-# Define jobs
-jobs:
-  build_and_push_image:
-    parameters:
-      app_name:
-        type: string
-        default: "python-demo"
-      aws_region:
-        type: string
-        default: "eu-west-1"
-    executor: aws-ecr/default
-    working_directory: ~/project
-    steps:
-      - checkout
-      - run:
-          name: Get short Git hash
-          command: |
-            SHORT_HASH=$(git rev-parse --short=7 HEAD)
-            echo "export SHORT_HASH=$SHORT_HASH" >> "$BASH_ENV"
-            echo "Full git hash: $(git rev-parse HEAD)"
-            echo "Short git hash: $SHORT_HASH"
-      - aws-ecr/ecr-login:
-          region: << parameters.aws_region >>
-      - aws-ecr/build-image:
-          context: aws-creds
-          repo: isa/<< parameters.app_name >>
-          tag: main-$SHORT_HASH
-          dockerfile: Dockerfile
-          path: .
-          region: << parameters.aws_region >>
-      - aws-ecr/push-image:
-          context: aws-creds
-          repo: isa/<< parameters.app_name >>
-          tag: main-$SHORT_HASH
-          region: << parameters.aws_region >>
-
-# Define workflows
+  aws-cli: circleci/aws-cli@5.1
+  aws-ecr: circleci/aws-ecr@9.0
 workflows:
-  build_and_push_image_workflow:
+  build_and_push_image:
     jobs:
-      - build_and_push_image:
-          context: aws-creds
+      - aws-ecr/build_and_push_image:
+          auth:
+            - aws-cli/setup:
+          account_id: ${AWS_ACCOUNT_ID}
+          context: aws-creds 
+          dockerfile: Dockerfile
+          #executors: base
+          push_image: true
+          region: eu-west-1 
+          repo: isa/python-demo 
+          tag: $CIRCLE_SHA1_SHORT
 
