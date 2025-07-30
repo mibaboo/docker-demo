@@ -13,7 +13,7 @@ workflows:
           dockerfile: Dockerfile
           #executors: base
           push_image: true
-          region: ${AWS_DEFAULT_REGION}
+          region: eu-west-1 
           repo: isa/python-demo 
           tag: isa
 
