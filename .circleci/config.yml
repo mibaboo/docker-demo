@@ -1,25 +1,10 @@
 version: 2.1
 orbs:
   aws-ecr: circleci/aws-ecr@9.5.4
-  aws-cli: circleci/aws-cli@5.1
-
-
-# Define your jobs
-jobs:
-  build_and_push_image:
-    executor: aws-ecr/default
-    working_directory: ~/project
-    steps:
-      - checkout
-      - aws-ecr/build-and-push-image:
-          repo: isa/python-demo
-          tag: isa-test
-          dockerfile: Dockerfile
-          path: .
-          region: eu-west-1 
 
 workflows:
-  build_and_push_image_workflow:
+  build-and-deploy:
     jobs:
-      - build_and_push_image:
-          context: aws-creds
+      - aws-ecr/build-and-push-image:
+          repo: "isa/python-demo"
+          tag: "${CIRCLE_SHA1}"
