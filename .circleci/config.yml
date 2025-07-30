@@ -1,14 +1,19 @@
 # .circleci/config.yml
 version: 2.1
 
+orbs:
+  aws-ecr: circleci/aws-ecr@9.5.4  #This line adds the ECR orb. Check CircleCI Orb Registry for latest version if needed.
+
+
+
 # Define reusable executors (environments)
-executors:
-  docker-build-executor:
-    docker:
-      - image: cimg/base:2024.06
-    resource_class: large
-    environment:
-      DOCKER_BUILDKIT: 1
+#executors:
+#  docker-build-executor:
+#    docker:
+#      - image: cimg/base:2024.06
+#    resource_class: large
+#    environment:
+#      DOCKER_BUILDKIT: 1
 
 # Define jobs
 jobs:
@@ -20,11 +25,10 @@ jobs:
       aws_region:
         type: string
         default: "eu-west-1"
-    executor: docker-build-executor
+    executor: aws-ecr/default
     working_directory: ~/project
     steps:
       - checkout
-
       - run:
           name: Get short Git hash
           command: |
@@ -32,40 +36,14 @@ jobs:
             echo "export SHORT_HASH=$SHORT_HASH" >> "$BASH_ENV"
             echo "Full git hash: $(git rev-parse HEAD)"
             echo "Short git hash: $SHORT_HASH"
+      - aws-ecr/build-and-push-image:
+          context: aws-creds
+          repo: isa/<< parameters.app_name >>
+          tag: main-$SHORT_HASH
+          dockerfile: Dockerfile
+          path: .
+          region: << parameters.aws_region >>
 
-      - setup_remote_docker:
-          docker_layer_caching: true
-
-      - run:
-          name: Install AWS CLI
-          command: |
-            sudo apt-get update && sudo apt-get install -y curl unzip
-            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-            unzip awscliv2.zip
-            sudo ./aws/install
-            aws --version
-
-      - run:
-          name: Build Docker image
-          command: |
-            docker build -t isa/<< parameters.app_name >>:main-$SHORT_HASH .
-
-      - run:
-          name: Authenticate with ECR and Push Docker image
-          command: |
-            ECR_REGISTRY_ID="294185804746"
-            ECR_REPOSITORY="isa/<< parameters.app_name >>"
-            IMAGE_TAG="main-$SHORT_HASH"
-
-            echo "Authenticating to ECR..."
-            aws ecr get-login-password --region << parameters.aws_region >> \
-            | docker login \
-              --username AWS \
-              --password-stdin $ECR_REGISTRY_ID.dkr.ecr.<< parameters.aws_region >>.amazonaws.com
-
-            echo "Pushing Docker image to ECR..."
-            docker tag isa/<< parameters.app_name >>:$IMAGE_TAG $ECR_REGISTRY_ID.dkr.ecr.<< parameters.aws_region >>.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
-            docker push $ECR_REGISTRY_ID.dkr.ecr.<< parameters.aws_region >>.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
 
 # Define workflows
 workflows:
