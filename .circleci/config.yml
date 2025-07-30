@@ -28,7 +28,6 @@ jobs:
             echo "Full git hash: $(git rev-parse HEAD)"
             echo "Short git hash: $SHORT_HASH"
       - aws-ecr/build-and-push-image:
-          context: aws-creds
           repo: isa/<< parameters.app_name >>
           tag: main-$SHORT_HASH
           dockerfile: Dockerfile
