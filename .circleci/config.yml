@@ -1,81 +1,54 @@
 # .circleci/config.yml
 version: 2.1
 
+orbs:
+  aws-ecr: circleci/aws-ecr@9.5.4  #This line adds the ECR orb. Check CircleCI Orb Registry for latest version if needed.
+
+
+
 # Define reusable executors (environments)
-executors:
-  docker-build-executor:
-    docker:
-      # Using a cimg/base image and installing aws-cli on it
-      # For a more robust solution without orbs, you might build your own Docker image
-      # that has aws-cli and Docker pre-installed, and use that as your executor.
-      # For now, we'll install AWS CLI within the job steps.
-      - image: cimg/base:2024.06
-    resource_class: large
-    environment:
-      DOCKER_BUILDKIT: 1 # Enable BuildKit for faster Docker builds
+#executors:
+#  docker-build-executor:
+#    docker:
+#      - image: cimg/base:2024.06
+#    resource_class: large
+#    environment:
+#      DOCKER_BUILDKIT: 1
 
-# Define common parameters for jobs
-parameters:
-  app_name:
-    type: string
-    default: "python-demo" # Your application name from Azure DevOps
-  aws_region:
-    type: string
-    default: "eu-west-1" # Your AWS region
-
+# Define jobs
 jobs:
   build_and_push_image:
-    executor: docker-build-executor
+    parameters:
+      app_name:
+        type: string
+        default: "python-demo"
+      aws_region:
+        type: string
+        default: "eu-west-1"
+    executor: aws-ecr/default
     working_directory: ~/project
     steps:
-      - checkout # Checkout your code
+      - checkout
       - run:
           name: Get short Git hash
           command: |
             SHORT_HASH=$(git rev-parse --short=7 HEAD)
-            echo "export SHORT_HASH=$SHORT_HASH" >> "$BASH_ENV" # Make the variable available to subsequent steps
+            echo "export SHORT_HASH=$SHORT_HASH" >> "$BASH_ENV"
             echo "Full git hash: $(git rev-parse HEAD)"
             echo "Short git hash: $SHORT_HASH"
-      - setup_remote_docker: # This step sets up a Docker daemon for building images
-          docker_layer_caching: true
-      - run:
-          name: Install AWS CLI
-          # Installing aws-cli v2. This is a common way to do it on Ubuntu-based images.
-          # You might need to adjust based on your chosen executor image.
-          command: |
-            sudo apt-get update && sudo apt-get install -y curl unzip
-            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-            unzip awscliv2.zip
-            sudo ./aws/install
-            aws --version
-      - run:
-          name: Build Docker image
-          command: |
-            docker build -t isa/<< pipeline.parameters.app_name >>:main-$SHORT_HASH .
-      - run:
-          name: Authenticate with ECR and Push Docker image
-          # This command assumes AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are available via the 'aws-creds' context.
-          # The AWS CLI automatically picks up these environment variables.
-          # Replace '294185804746' with your actual AWS Account ID.
-          command: |
-            ECR_REGISTRY_ID="294185804746" # YOUR AWS ACCOUNT ID HERE
-            ECR_REPOSITORY="isa/<< pipeline.parameters.app_name >>"
-            IMAGE_TAG="main-$SHORT_HASH"
+      - aws-ecr/build-and-push-image:
+          context: aws-creds
+          repo: isa/<< parameters.app_name >>
+          tag: main-$SHORT_HASH
+          dockerfile: Dockerfile
+          path: .
+          region: << parameters.aws_region >>
 
-            echo "Authenticating to ECR..."
-            aws ecr get-login-password --region << pipeline.parameters.aws_region >> \
-            | docker login \
-              --username AWS \
-              --password-stdin $ECR_REGISTRY_ID.dkr.ecr.<< pipeline.parameters.aws_region >>.amazonaws.com
 
-            echo "Pushing Docker image to ECR..."
-            docker push $ECR_REGISTRY_ID.dkr.ecr.<< pipeline.parameters.aws_region >>.amazonaws.com/$ECR_REPOSITORY:$IMAGE_TAG
-
+# Define workflows
 workflows:
-  build_and_push_image_workflow: # Renamed for clarity, focusing on just the build/push for now
+  build_and_push_image_workflow:
     jobs:
       - build_and_push_image:
-          context: aws-creds # Link to your AWS credentials context
-          filters:
-            branches:
-              only: main
+          context: aws-creds
+
