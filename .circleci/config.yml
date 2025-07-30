@@ -6,6 +6,8 @@ workflows:
   build_and_push_image:
     jobs:
       - aws-ecr/build_and_push_image:
+          auth:
+            - aws-cli/setup:
           account_id: ${AWS_ACCOUNT_ID}
           context: aws-creds 
           dockerfile: Dockerfile
