@@ -11,7 +11,7 @@ workflows:
           account_id: ${AWS_ACCOUNT_ID}
           context: aws-creds 
           dockerfile: Dockerfile
-          executors: base
+          #executors: base
           push_image: true
           region: ${AWS_DEFAULT_REGION}
           repo: isa/python-demo 
