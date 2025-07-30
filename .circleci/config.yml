@@ -3,9 +3,6 @@ version: 2.1
 
 # Declare the Orbs you want to use
 orbs:
-  # The aws-ecr orb will handle Docker builds, ECR authentication, and pushing.
-  # Check the CircleCI Orb Registry (https://circleci.com/developer/orbs)
-  # for the absolute latest stable version if you're not using 9.5.4.
   aws-ecr: circleci/aws-ecr@9.5.4
 
 # Define reusable parameters for the entire pipeline
@@ -20,41 +17,32 @@ parameters:
 # Define your jobs
 jobs:
   build_and_push_image:
-    # Use the default executor provided by the aws-ecr orb.
-    # This executor comes pre-configured with Docker and the AWS CLI.
     executor: aws-ecr/default
-    working_directory: ~/project # Set the base directory for your repository files
+    working_directory: ~/project
 
     steps:
-      - checkout # Step 1: Clone your Git repository into the working_directory
+      - checkout
 
-      - run: # Step 2: Get the short Git hash and make it available as an environment variable
+      - run:
           name: Get short Git hash
           command: |
             SHORT_HASH=$(git rev-parse --short=7 HEAD)
-            # This makes SHORT_HASH an environment variable available to subsequent steps in THIS JOB.
             echo "export SHORT_HASH=$SHORT_HASH" >> "$BASH_ENV"
             echo "Full git hash: $(git rev-parse HEAD)"
             echo "Short git hash: $SHORT_HASH"
 
-      - aws-ecr/build-and-push-image: # Step 3: Use the Orb command to build and push
-          repo: isa/<< parameters.app_name >> # The name of your ECR repository (e.g., "my-org/my-app")
-          tag: main-$SHORT_HASH # The image tag. $SHORT_HASH is expanded here.
-          dockerfile: Dockerfile # Path to your Dockerfile, relative to working_directory
-          path: . # Build context for Docker, usually the current directory (.)
-          region: << parameters.aws_region >> # Pass the AWS region from pipeline parameters
+      - aws-ecr/build-and-push-image:
+          # IMPORTANT: Use 'pipeline.parameters' here because app_name and aws_region are pipeline parameters
+          repo: isa/<< pipeline.parameters.app_name >>
+          tag: main-$SHORT_HASH
+          dockerfile: Dockerfile
+          path: .
+          region: << pipeline.parameters.aws_region >>
 
 # Define your workflows
 workflows:
   build_and_push_image_workflow:
     jobs:
       - build_and_push_image:
-          # Apply the 'aws-creds' context to this job.
-          # This context must contain AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.
-          # The aws-ecr orb will automatically pick these up for authentication.
           context: aws-creds
-          # Optional: Add filters if you only want this workflow to run on specific branches/tags.
-          # For example, to run only on the 'main' branch (if your branch is not 'demo' anymore):
-          # filters:
-          #   branches:
-          #     only: main
+          # No filters for now as per your previous successful run.
