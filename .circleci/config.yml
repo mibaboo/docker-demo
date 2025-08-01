@@ -20,7 +20,7 @@
 version: 2.1
 
 orbs:
-  mibaboo: isa-ns/mibaboo@dev:two
+  mibaboo: isa-ns/mibaboo@dev:three
 
 workflows:
   build-and-push:
