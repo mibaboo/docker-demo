@@ -20,10 +20,20 @@
 version: 2.1
 
 orbs:
-  mibaboo: isa-ns/mibaboo@dev:first
+  mibaboo: isa-ns/mibaboo@dev:two
 
 workflows:
-  test-orb:
+  build-and-push:
     jobs:
-      - mibaboo/hello
+      - mibaboo/build_and_push:
+          context: aws-shared  # your context with AWS credentials
+          repo: python-demo         # your ECR repository name
+          #region: us-east-1    # your AWS region
+          #account_id: ${AWS_ACCOUNT_ID}
+          tag: ${CIRCLE_BRANCH}-${CIRCLE_SHA1:0:7}
+          dockerfile: Dockerfile
+          path: .
+          platform: linux/amd64
+          #create_repo: true    # creates ECR repo if it doesn't exist
+          #repo_scan_on_push: true  
 
