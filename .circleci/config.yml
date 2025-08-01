@@ -27,7 +27,7 @@ workflows:
     jobs:
       - mibaboo/build_and_push:
           context: aws-shared  # your context with AWS credentials
-          repo: python-demo         # your ECR repository name
+          repo: isa/python-demo         # your ECR repository name
           #region: us-east-1    # your AWS region
           #account_id: ${AWS_ACCOUNT_ID}
           tag: ${CIRCLE_BRANCH}-${CIRCLE_SHA1:0:7}
