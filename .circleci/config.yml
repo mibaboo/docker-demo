@@ -26,14 +26,5 @@ workflows:
   build-and-push:
     jobs:
       - mibaboo/build_and_push:
-          context: aws-shared  # your context with AWS credentials
-          repo: isa/python-demo         # your ECR repository name
-          #region: us-east-1    # your AWS region
-          #account_id: ${AWS_ACCOUNT_ID}
-          tag: ${CIRCLE_BRANCH}-${CIRCLE_SHA1:0:7}
-          dockerfile: Dockerfile
-          path: .
-          platform: linux/amd64
-          #create_repo: true    # creates ECR repo if it doesn't exist
-          #repo_scan_on_push: true  
-
+          context: aws-shared
+          repo: isa/python-demo
