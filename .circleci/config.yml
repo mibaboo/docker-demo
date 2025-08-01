@@ -1,19 +1,29 @@
-version: '2.1'
+#version: '2.1'
+#orbs:
+#  aws-cli: circleci/aws-cli@5.1
+#  aws-ecr: circleci/aws-ecr@9.0
+#workflows:
+#  build_and_push_image:
+#    jobs:
+#      - aws-ecr/build_and_push_image:
+#          auth:
+#            - aws-cli/setup:
+#          account_id: ${AWS_ACCOUNT_ID}
+#          context: aws-creds 
+#          dockerfile: Dockerfile
+#          #executors: base
+#          push_image: true
+#          region: eu-west-1 
+#          repo: isa/python-demo 
+#          tag: isa
+#
+version: 2.1
+
 orbs:
-  aws-cli: circleci/aws-cli@5.1
-  aws-ecr: circleci/aws-ecr@9.0
+  mibaboo: isa-ns/mibaboo@dev:first
+
 workflows:
-  build_and_push_image:
+  test-orb:
     jobs:
-      - aws-ecr/build_and_push_image:
-          auth:
-            - aws-cli/setup:
-          account_id: ${AWS_ACCOUNT_ID}
-          context: aws-creds 
-          dockerfile: Dockerfile
-          #executors: base
-          push_image: true
-          region: eu-west-1 
-          repo: isa/python-demo 
-          tag: isa
+      - mibaboo/hello
 
